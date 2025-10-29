@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 # Adicionamos 'localhost' e o IP do host (lido do .env)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', config('ALLOWED_HOST', default='')]
@@ -128,6 +128,9 @@ STATIC_URL = 'static/'
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+# Pasta de destino para os arquivos estáticos coletados no modo DEBUG=False (Produção)
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
