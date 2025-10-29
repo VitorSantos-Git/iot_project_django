@@ -1,0 +1,50 @@
+# iot_project/api_test.http
+
+@HOST = 127.0.0.1:8000
+@AUTH_TOKEN = ESP8266_002
+@DEVICE_ID = ESP8266_002
+
+# ==============================================================================
+# 1. POST (TELEMETRIA): O ESP ENVIA DADOS DE SENSORES E ESTADO
+#    URL: /api/devices/
+#    O Django deve salvar um TelemetryData e atualizar o last_seen do Device.
+# ==============================================================================
+POST http://{{HOST}}/api/telemetry/
+Content-Type: application/json
+Authorization: Token {{AUTH_TOKEN}}
+
+{
+    "device_id": "{{DEVICE_ID}}",
+    "temperature_celsius": 24.5,
+    "humidity_percent": 60.1,
+    "relay_state_D1": true,
+    "last_button_action": "init_connect"
+}
+
+###
+
+# ==============================================================================
+# 2. GET (COMANDOS PENDENTES): O ESP CONSULTA SE HÁ AÇÃO
+#    URL: /api/devices/{device_id}/
+#    O Django deve responder com 'status: no_command' ou 'status: command_pending'.
+# ==============================================================================
+GET http://{{HOST}}/api/devices/{{DEVICE_ID}}/
+Authorization: Token {{AUTH_TOKEN}}
+
+###
+
+# ==============================================================================
+# 3. PUT (CONFIRMAÇÃO/LIMPEZA): O ESP CONFIRMA O COMANDO EXECUTADO
+#    URL: /api/devices/{device_id}/
+#    O ESP envia 'pending_command: null' para limpar o campo.
+# ==============================================================================
+PUT http://{{HOST}}/api/devices/{{DEVICE_ID}}/
+Content-Type: application/json
+Authorization: Token {{AUTH_TOKEN}}
+
+{
+    "last_command": "desligar_rele_executado",
+    "pending_command": null
+}
+
+###

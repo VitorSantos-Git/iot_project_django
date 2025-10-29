@@ -1,0 +1,167 @@
+{% load static %}
+
+{% block extrahead %}
+    <style>
+        /* Estilos básicos para o container do dashboard */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); /* 2 ou 3 colunas responsivas */
+            gap: 10px; /* Espaço entre os cartões */
+            padding: 10px;
+            background-color: #f0f2f5; /* Cor de fundo suave */
+        }
+
+        /* Estilos para cada cartão de dispositivo */
+        .device-card {
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            min-height: 100px; /* Altura mínima para consistência */
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between; /* Espaçamento entre conteúdo e rodapé do cartão */
+        }
+
+        .device-card h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 1.4em;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .device-card p {
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.95em;
+        }
+
+        .device-card strong {
+            color: #333;
+        }
+
+        /* Estilos para status de conectividade */
+        .status-active {
+            color: green;
+            font-weight: bold;
+        }
+
+        .status-inactive {
+            color: orange;
+            font-weight: bold;
+        }
+
+        .status-offline {
+            color: red;
+            font-weight: bold;
+        }
+        
+        /* Estilo para a barra de conectividade */
+        .connectivity-info {
+            background-color: #e9ecef;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #495057;
+            font-size: 0.9em;
+        }
+
+        /* Estilos para dados recentes */
+        .recent-data {
+            border-top: 1px dashed #e0e0e0;
+            padding-top: 10px;
+            margin-top: 15px;
+            font-size: 0.9em;
+        }
+        .recent-data ul {
+            list-style: none;
+            padding-left: 0;
+            margin-top: 5px;
+        }
+        .recent-data li {
+            margin-bottom: 3px;
+        }
+
+    </style>
+    <meta http-equiv="refresh" content="30">
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>Painel de Dispositivos IoT</h1>
+    
+    <div class="connectivity-info">
+        <p>Conectividade com o ESP8266 estabelecida. Timeout de inatividade: 5 minutos.
+           <span id="last-refresh" style="float: right; font-style: italic;">Última atualização: <span id="refresh-time"></span></span>
+        </p>
+    </div>
+
+    <div class="dashboard-container">
+        {% for device in devices %}
+            <div class="device-card">
+                <div> {# Conteúdo principal do cartão #}
+                    <h2>{{ device.name }} ({{ device.device_id }})</h2>
+                    <p><strong>Status:</strong> 
+                        {% if device.is_active %}
+                            <span class="status-active">ATIVO (Online)</span>
+                        {% else %}
+                            <span class="status-offline">INATIVO (Offline)</span>
+                        {% endif %}
+                    </p>
+                    <p><strong>Relé:</strong> 
+                        {% if device.latest_telemetry %}
+                            {% if device.latest_telemetry.relay_state_D1 %}
+                                <span style="color: green;">LIGADO</span>
+                            {% else %}
+                                <span style="color: red;">DESLIGADO</span>
+                            {% endif %}
+                        {% else %}
+                            N/D
+                        {% endif %}
+                    </p>
+
+                    <div class="recent-data">
+                        <h3>Dados Recentes {% if device.latest_telemetry %}({{ device.latest_telemetry.timestamp|date:"d/m H:i:s" }}){% endif %}:</h3>
+                        <ul>
+                            {% if device.latest_telemetry %}
+                                <li><strong>Temperatura:</strong> {{ device.latest_telemetry.temperature_celsius|default:"N/D" }} °C</li>
+                                <li><strong>Umidade:</strong> {{ device.latest_telemetry.humidity_percent|default:"N/D" }} %</li>
+                                <li><strong>Última Ação Local:</strong> {{ device.latest_telemetry.last_button_action|default:"N/D" }}</li>
+                            {% else %}
+                                <li>Nenhum dado de telemetria recente.</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                {# Rodapé do cartão #}
+                <div style="margin-top: auto; padding-top: 10px; border-top: 1px solid #eee; font-size: 0.85em; color: #777;">
+                    <p><strong>Último Visto (Heartbeat):</strong> {{ device.last_seen|date:"d/m H:i:s"|default:"Nunca" }}</p>
+                </div>
+            </div>
+        {% empty %}
+            <p>Nenhum dispositivo IoT registrado ainda.</p>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Função para atualizar o timestamp da última atualização
+        function updateRefreshTime() {
+            const now = new Date();
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('refresh-time').textContent = now.toLocaleDateString('pt-BR', options);
+        }
+
+        // Atualiza a hora imediatamente ao carregar a página
+        updateRefreshTime();
+
+        // Se você tiver um refresh meta tag, este script é apenas para exibir o horário da última atualização.
+        // Se o refresh for feito via JS (ex: fetch a cada X segundos), você chamaria updateRefreshTime() após o sucesso do fetch.
+    });
+</script>
+
+{% endblock %}

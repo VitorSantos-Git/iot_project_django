@@ -1,0 +1,59 @@
+# iot_project/.gitignore
+
+# Ignorar arquivos de ambiente Python/Devenv
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+*.env
+.vscode/
+# Opcional: Se usa VS Code e não quer compartilhar configurações do editor
+.idea/
+# Opcional: Se usa PyCharm
+
+# Ignorar arquivos de ambiente sensíveis (Chaves e Segredos)
+.env
+
+# Ignorar arquivos gerados pelo Django/Databases locais
+db.sqlite3  
+# Se você estivesse usando SQLite localmente
+celerybeat-schedule 
+# Arquivo de estado do Celery Beat, que não deve ser comitado
+
+# Ignorar arquivos de compilação (node/npm, se usados futuramente)
+/node_modules
+
+# Ignorar arquivos estáticos gerados (se houver)
+/static/compiled_assets/
+
+# Ignorar pastas de mídia (se houver uploads)
+/media/
+
+# Celery Beat Schedule Files
+celerybeat-schedule
+celerybeat-schedule.bak
+celerybeat-schedule.dat
+celerybeat-schedule.dir
+celerybeat-schedule-shm
+celerybeat-schedule-wal
+
+
+# Arduino/ESP
+*.hex
+*.bin
+*.elf
+*.lst
+*.map
+*.h
+#**.h
+.vscode/ 
+# Se usa VS Code para Arduino
+build/ 
+# Pasta de build do Arduino IDE
+
+# Arquivos de configurações sensíveis
+**/password_ssid.h 
+# <--- Mais genérico, ignora em qualquer subdiretório

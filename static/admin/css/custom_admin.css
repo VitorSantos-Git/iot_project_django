@@ -1,0 +1,15 @@
+/* iot_project/static/admin/css/custom_admin.css */
+
+/* O texto da versão do Jazzmin geralmente está dentro do rodapé <footer>.
+Tentaremos atingir o texto ou o rodapé inteiro, dependendo da estrutura do Jazzmin.
+*/
+
+/* esconder o rodapé completo */
+footer {
+    display: none !important;
+}
+
+/* Esconde o parágrafo "Thanks for spending..." na página de login/logout */
+.login-box-msg + .text-center {
+    display: none !important;
+}
