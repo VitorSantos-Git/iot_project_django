@@ -14,6 +14,19 @@ class DeviceSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['last_seen'] # last_seen será preenchido pelo Django/API
 
+        extra_kwargs = {
+            # Torna o 'pending_command' o único campo que pode ser escrito no PATCH
+            # sem problemas de validação (embora todos sejam opcionais, isso garante)
+            'pending_command': {'required': False}, 
+            # Garante que os outros campos sejam ignorados se não forem fornecidos
+            'name': {'required': False},
+            'device_type': {'required': False},
+            'location': {'required': False},
+            'ip_address': {'required': False},
+            'is_active': {'required': False},
+            'last_command': {'required': False},
+        }
+
 # Serializer para o modelo TelemetryData
 class TelemetryDataSerializer(serializers.ModelSerializer):
     # Usamos o StringRelatedField para exibir o nome do dispositivo, mas 
