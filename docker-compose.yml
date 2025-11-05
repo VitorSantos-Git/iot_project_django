@@ -10,8 +10,8 @@ services:
     # Constrói a imagem Docker a partir do Dockerfile na pasta atual (.)
     build: .
     # Mapeia a porta 8000 do container para a porta 8000 do host (sua VM)
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000"
     # Monta o código-fonte do projeto no container.
     # Útil para que as alterações no código sejam refletidas sem reconstruir a imagem.
     volumes:
@@ -93,6 +93,23 @@ services:
       - db
     # O Celery Beat precisa do arquivo celerybeat-schedule para persistir o estado
     command: celery -A core_system beat -l info --scheduler django_celery_beat.schedulers.DatabaseScheduler
+
+ # =================================================================
+ # 6. SERVIÇO DE REVERSE PROXY (NGINX) 
+ # =================================================================
+  nginx:
+    image: nginx:latest
+    ports:
+      # Mapeia a porta 80 (HTTP padrão) da VM para a porta 80 do Nginx
+      - "80:80"
+    volumes:
+      # Monta o arquivo de configuração Nginx criado no Passo 1
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Monta a pasta de estáticos coletados para que o Nginx os sirva diretamente
+      - ./staticfiles:/app/staticfiles:ro 
+    depends_on:
+      - web # Garante que o Django esteja UP antes do Nginx tentar redirecionar
+
 
 # =================================================================
 # VOLUMES (Para persistência de dados)
