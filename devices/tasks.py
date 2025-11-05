@@ -13,7 +13,8 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Base API URL para comunicação com o servidor Django
-BASE_API_URL = f"http://{config('ALLOWED_HOST')}:8000/api/devices"
+# DEVE USAR O NOME INTERNO DO SERVIÇO DENTRO DO DOCKER (web)
+BASE_API_URL = "http://web:8000/api/devices"
 
 
 # ==============================================================================
