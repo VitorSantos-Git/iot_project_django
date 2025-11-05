@@ -1,0 +1,100 @@
+#iot_project/docker-compose.yml
+version: '3.8'
+
+services:
+
+  # =================================================================
+  # 1. SERVIÇO WEB (APLICAÇÃO DJANGO/GUNICORN)
+  # =================================================================
+  web:
+    # Constrói a imagem Docker a partir do Dockerfile na pasta atual (.)
+    build: .
+    # Mapeia a porta 8000 do container para a porta 8000 do host (sua VM)
+    ports:
+      - "8000:8000"
+    # Monta o código-fonte do projeto no container.
+    # Útil para que as alterações no código sejam refletidas sem reconstruir a imagem.
+    volumes:
+      - .:/app
+    # Carrega as variáveis de ambiente do arquivo .env
+    env_file:
+      - .env
+    # Define a dependência. O web só inicia após o banco de dados estar "saudável".
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    
+    # Comando de inicialização: Usa o Gunicorn para rodar o Django.
+    # core_system.wsgi é o caminho para o arquivo WSGI.
+    # --bind 0.0.0.0:8000 permite acesso de qualquer IP na porta 8000.
+    command: gunicorn core_system.wsgi:application --bind 0.0.0.0:8000
+
+  # =================================================================
+  # 2. SERVIÇO DE BANCO DE DADOS (POSTGRESQL)
+  # =================================================================
+  db:
+    image: postgres:15-alpine
+    # Mapeia o volume de dados para persistir as informações do banco
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    # Variáveis de ambiente padrão do PostgreSQL, que devem corresponder ao seu .env
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    # Checagem de saúde (healthcheck) para garantir que o Django só inicie quando o DB estiver pronto
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # =================================================================
+  # 3. SERVIÇO DE FILA/CACHE (REDIS)
+  # =================================================================
+  redis:
+    image: redis:7-alpine
+    # Mapeia o volume para persistir o cache/broker
+    volumes:
+      - redis_data:/data
+    # Garante que ele inicie rápido (não tem healthcheck complexo)
+    command: redis-server --appendonly yes
+
+  # =================================================================
+  # 4. SERVIÇO DE WORKER (CELERY)
+  # =================================================================
+  celery_worker:
+    build: .
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    # Comando para iniciar o Worker do Celery, ouvindo as tarefas
+    command: celery -A core_system worker -l info
+
+  # =================================================================
+  # 5. SERVIÇO DE BEAT (CELERY BEAT - AGENDADOR)
+  # =================================================================
+  celery_beat:
+    build: .
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - db
+    # O Celery Beat precisa do arquivo celerybeat-schedule para persistir o estado
+    command: celery -A core_system beat -l info --scheduler django_celery_beat.schedulers.DatabaseScheduler
+
+# =================================================================
+# VOLUMES (Para persistência de dados)
+# =================================================================
+volumes:
+  postgres_data:
+  redis_data:

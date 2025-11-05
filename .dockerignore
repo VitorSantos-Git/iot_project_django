@@ -1,0 +1,19 @@
+#iot_project/.dockerignore
+# Ignorar arquivos de controle de versão e ambientes de desenvolvimento
+.git
+.gitignore
+.vscode
+.venv
+
+# Ignorar o arquivo de variáveis de ambiente (sensível)
+.env
+
+# Ignorar o estado do Celery
+celerybeat-schedule
+
+# Ignorar a pasta onde os arquivos estáticos serão coletados
+staticfiles/
+
+# Ignorar pastas de cache/temporárias
+__pycache__
+*.pyc
