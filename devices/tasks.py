@@ -42,6 +42,8 @@ def process_scheduled_task(task_id):
     # Prepara o comando
     command_data = task.command_json
     command_data_json_string = json.dumps(command_data)
+    final_payload_dict = {'pending_command': command_data_json_string}
+    final_payload_json_string = json.dumps(final_payload_dict)
     all_success = True
     
     # Itera sobre todos os dispositivos associados à tarefa
@@ -53,7 +55,7 @@ def process_scheduled_task(task_id):
             # Cabeçalhos para autenticação e tipo de conteúdo
             headers = {
                 'Authorization': f'Token {CELERY_AUTH_TOKEN}',
-                # 'Content-Type': 'application/json'
+                'Content-Type': 'application/json'
             }
             
             # Payload para definir o comando pendente
@@ -63,7 +65,7 @@ def process_scheduled_task(task_id):
                 # Faz a requisição PATCH para atualizar o comando pendente
                 response = requests.patch(
                     device_api_url, 
-                    json=payload, 
+                    data=final_payload_json_string,
                     headers=headers, 
                     timeout=10
                 ) 
@@ -74,31 +76,31 @@ def process_scheduled_task(task_id):
                 else:
                     # CRÍTICO: Exibe a resposta da API em caso de erro (ex: 401/403)
                     logger.error(f"Falha ao enviar comando para {device.device_id}. Status: {response.status_code}. Resposta: {response.text}")
-                    # Aqui você pode mudar o status da tarefa para 'FALHOU'
+                    # Aqui pode mudar o status da tarefa para 'FALHOU'
                     task.status = 'FAILED'
                     task.save()
+                    all_success = False
                     
             except requests.RequestException as e:
                 logger.error(f"Erro de rede ao enviar comando para {device.device_id}: {e}")
                 # Mude o status da tarefa para 'FALHOU' se houver erro de rede
                 task.status = 'FAILED'
                 task.save()
+                all_success = False            
+            
+            
 
+            # # Usa PATCH para atualizar apenas o campo pending_command
+            # response = requests.patch(
+            #     device_api_url, 
+            #     json=payload, 
+            #     headers=headers,
+            #     timeout=10 
+            # )
             
-            
-            
+            # response.raise_for_status() # Lança exceção para códigos de status 4xx/5xx
 
-            # Usa PATCH para atualizar apenas o campo pending_command
-            response = requests.patch(
-                device_api_url, 
-                json=payload, 
-                headers=headers,
-                timeout=10 
-            )
-            
-            response.raise_for_status() # Lança exceção para códigos de status 4xx/5xx
-
-            logger.warning(f"Comando '{command_data.get('action', 'N/A')}' enviado para {device.device_id} com sucesso. Status: {response.status_code}")
+            # logger.warning(f"Comando '{command_data.get('action', 'N/A')}' enviado para {device.device_id} com sucesso. Status: {response.status_code}")
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Erro de rede ao enviar comando para o dispositivo {device.device_id}: {e}")
