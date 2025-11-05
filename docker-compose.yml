@@ -29,7 +29,9 @@ services:
     # Comando de inicialização: Usa o Gunicorn para rodar o Django.
     # core_system.wsgi é o caminho para o arquivo WSGI.
     # --bind 0.0.0.0:8000 permite acesso de qualquer IP na porta 8000.
-    command: gunicorn core_system.wsgi:application --bind 0.0.0.0:8000
+    command: >
+      sh -c "python manage.py collectstatic --noinput &&
+             gunicorn core_system.wsgi:application --bind 0.0.0.0:8000 --timeout 120 --workers 3"
 
   # =================================================================
   # 2. SERVIÇO DE BANCO DE DADOS (POSTGRESQL)

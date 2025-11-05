@@ -265,7 +265,7 @@ JAZZMIN_SETTINGS = {
     },
 
     #Necessário esconder o rodapé completo e messagem do loggout
-    "custom_css": "admin/css/custom_admin.css", # Caminho para o CSS CUSTOMIZADO
+    # "custom_css": "admin/css/custom_admin.css", # Caminho para o CSS CUSTOMIZADO
     
     "show_ui_controls": False,
     "navigation_expanded": True,
