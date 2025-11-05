@@ -42,6 +42,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -131,6 +132,13 @@ STATICFILES_DIRS = [
 
 # Pasta de destino para os arquivos estáticos coletados no modo DEBUG=False (Produção)
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Configuração WhiteNoise para servir arquivos estáticos em produção
+STORAGES = {
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
