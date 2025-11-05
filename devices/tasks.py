@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 # DEVE USAR O NOME INTERNO DO SERVIÇO DENTRO DO DOCKER (web)
 BASE_API_URL = "http://web:8000/api/devices"
 
+CELERY_AUTH_TOKEN = config('CELERY_API_TOKEN')
+
 
 # ==============================================================================
 # TAREFA PRINCIPAL: PROCESSA E ENVIA O COMANDO PARA O DISPOSITIVO
@@ -49,13 +51,42 @@ def process_scheduled_task(task_id):
             
             # Cabeçalhos para autenticação e tipo de conteúdo
             headers = {
-                'Authorization': f'Token {device.device_id}', 
+                'Authorization': f'Token {CELERY_AUTH_TOKEN}',
                 'Content-Type': 'application/json'
             }
             
             # Payload para definir o comando pendente
             payload = {'pending_command': command_data}
+
+            try:
+                # Faz a requisição PATCH para atualizar o comando pendente
+                response = requests.patch(
+                    url, 
+                    data=json.dumps(payload), 
+                    headers=headers, 
+                    timeout=10
+                ) 
             
+                # Verifica o status da resposta
+                if response.status_code == 200:
+                    logger.info(f"Comando '{task.name}' enviado para {device.device_id}. Status: OK.")
+                else:
+                    # CRÍTICO: Exibe a resposta da API em caso de erro (ex: 401/403)
+                    logger.error(f"Falha ao enviar comando para {device.device_id}. Status: {response.status_code}. Resposta: {response.text}")
+                    # Aqui você pode mudar o status da tarefa para 'FALHOU'
+                    task.status = 'FAILED'
+                    task.save()
+                    
+            except requests.RequestException as e:
+                logger.error(f"Erro de rede ao enviar comando para {device.device_id}: {e}")
+                # Mude o status da tarefa para 'FALHOU' se houver erro de rede
+                task.status = 'FAILED'
+                task.save()
+
+            
+            
+            
+
             # Usa PATCH para atualizar apenas o campo pending_command
             response = requests.patch(
                 device_api_url, 
