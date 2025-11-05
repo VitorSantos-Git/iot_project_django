@@ -1,10 +1,22 @@
 # iot_project/core_system/authentication.py
+
 from rest_framework import authentication
 from rest_framework import exceptions
 from django.contrib.auth.models import User
-from devices.models import Device # Importamos o modelo Device para o token
+from devices.models import Device
 from decouple import config
 
+# --- Novo Usuário Fantasma para Celery ---
+class CeleryUser:
+    """Classe que simula um usuário para a requisição Celery/Sistema."""
+    is_staff = True
+    is_active = True
+    pk = -1
+    def __str__(self):
+        return "Celery Master User"
+    def is_authenticated(self):
+        return True
+    
 CELERY_MASTER_TOKEN = config('CELERY_API_TOKEN', default='CELERY_TOKEN_MISSING')
 
 class TokenAuthentication(authentication.BaseAuthentication):
@@ -13,49 +25,33 @@ class TokenAuthentication(authentication.BaseAuthentication):
     Espera o token no cabeçalho HTTP: Authorization: Token <SEU_TOKEN_AQUI>
     """
         
-    # O DRF espera que este método verifique a autenticação
     def authenticate(self, request):
-        # 1. Tenta extrair o token do cabeçalho 'Authorization'
         auth_header = request.headers.get('Authorization')
 
         if not auth_header:
-            # Se não houver cabeçalho, não autenticado
             return None
 
-        # Esperamos o formato "Token SEU_TOKEN"
         try:
-            # Divide a string "Token SEU_TOKEN" em ['Token', 'SEU_TOKEN']
             auth_type, auth_token = auth_header.split()
         except ValueError:
-            # Se o formato estiver incorreto (ex: apenas um token sem "Token ")
             raise exceptions.AuthenticationFailed('Formato do cabeçalho Authorization incorreto.')
 
         if auth_type.lower() != 'token':
             raise exceptions.AuthenticationFailed('O tipo de autenticação deve ser "Token".')
         
-        # VERIFICAÇÃO DO TOKEN MESTRE (CELERY) 
+        # VERIFICAÇÃO DO TOKEN MESTRE (CELERY)
         if auth_token == CELERY_MASTER_TOKEN:
-            # Se for o Celery, retornamos um 'Dispositivo Fantasma' para autenticar
-            # e dar acesso total (o TokenAuthentication precisa retornar 2 valores).
-            # Como o Celery não precisa de um Device real, retornamos None para o dispositivo.
-            return (None, auth_token)
+            # Se for o Celery, retornamos o usuário fantasma (CeleryUser) para autenticar
+            # e dar acesso total. O DRF espera (user, auth_token).
+            return (CeleryUser(), auth_token)
 
-        # 2. Busca o Device pelo Token fornecido
+        # 2. Busca o Device pelo Token fornecido (Para requisições do ESP)
         try:
-            # Usamos o próprio 'device_id' do ESP8266 como o "Token" de autenticação inicial, 
-            # ou podemos gerar um campo de token real.
-            # Para simplificar, usaremos o device_id como o "Token" que o ESP envia
             device = Device.objects.get(device_id=auth_token)
         except Device.DoesNotExist:
             raise exceptions.AuthenticationFailed('Token de dispositivo inválido.')
         
-        # # 3. Verifica se o dispositivo está ativo
-        # if not device.is_active:
-        #     raise exceptions.AuthenticationFailed('Dispositivo não está ativo.')
-
-        # 4. Sucesso: retorna o usuário (device) e o token usado
-        # Como o ESP não usa um usuário Django padrão, retornamos o objeto Device como o "user"
+        # 3. Sucesso: retorna o objeto Device como o \"user\" (pois o DRF espera um user-like object)
         return (device, auth_token)
     
 
-    

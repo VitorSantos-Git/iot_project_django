@@ -57,13 +57,14 @@ def process_scheduled_task(task_id):
             # Cabeçalhos: Apenas Autenticação. requests cuida do Content-Type no json=
             headers = {
                 'Authorization': f'Token {CELERY_AUTH_TOKEN}',
-}
+                'Content-Type': 'application/json'
+            }
 
             try:
                 # 3. Faz a requisição PATCH usando json=payload
                 response = requests.patch(
                     device_api_url, 
-                    json=payload_to_send, # <--- Método padrão e mais limpo
+                    data=json.dumps(payload_to_send),# <--- Método padrão e mais limpo
                     headers=headers, 
                     timeout=10
                 ) 
