@@ -41,6 +41,7 @@ def process_scheduled_task(task_id):
 
     # Prepara o comando
     command_data = task.command_json
+    command_data_json_string = json.dumps(command_data)
     all_success = True
     
     # Itera sobre todos os dispositivos associados à tarefa
@@ -56,7 +57,7 @@ def process_scheduled_task(task_id):
             }
             
             # Payload para definir o comando pendente
-            payload = {'pending_command': command_data}
+            payload = {'pending_command': command_data_json_string}
 
             try:
                 # Faz a requisição PATCH para atualizar o comando pendente
