@@ -1,7 +1,7 @@
 #iot_project/core_system/settings.py
 
 from pathlib import Path
-from decouple import config
+from decouple import config, Csv
 from django.utils import timezone
 from datetime import timedelta
 import os
@@ -20,7 +20,7 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = config('DEBUG', default=False, cast=bool)
 
 # Adicionamos 'localhost' e o IP do host (lido do .env)
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', config('ALLOWED_HOST', default='')]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', *config('ALLOWED_HOST', default='', cast=Csv())]
 
 
 # Application definition
