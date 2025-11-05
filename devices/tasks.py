@@ -39,77 +39,56 @@ def process_scheduled_task(task_id):
         logger.warning(f"Tarefa {task.pk} ('{task.name}') não está PENDENTE. Pulando execução.")
         return
 
-    # Prepara o comando
+    # 1. Prepara o comando (Dict do JSONField) e o converte para STRING para o CharField.
     command_data = task.command_json
-    command_data_json_string = json.dumps(command_data)
-    final_payload_dict = {'pending_command': command_data_json_string}
-    final_payload_json_string = json.dumps(final_payload_dict)
+    command_data_json_string = json.dumps(command_data) # String JSON para o CharField
+    
+    # 2. Payload final: Dicionário Python que será serializado pelo requests
+    payload_to_send = {'pending_command': command_data_json_string}
+    
     all_success = True
     
     # Itera sobre todos os dispositivos associados à tarefa
     for device in task.devices.all():
         try:
-            # 1. Tenta enviar o comando para o dispositivo (PATCH no registro do Device)
+            # Tenta enviar o comando para o dispositivo (PATCH no registro do Device)
             device_api_url = f"{BASE_API_URL}/{device.device_id}/"
             
-            # Cabeçalhos para autenticação e tipo de conteúdo
+            # Cabeçalhos: Apenas Autenticação. requests cuida do Content-Type no json=
             headers = {
                 'Authorization': f'Token {CELERY_AUTH_TOKEN}',
-                'Content-Type': 'application/json'
-            }
-            
-            # Payload para definir o comando pendente
-            payload = {'pending_command': command_data_json_string}
+}
 
             try:
-                # Faz a requisição PATCH para atualizar o comando pendente
+                # 3. Faz a requisição PATCH usando json=payload
                 response = requests.patch(
                     device_api_url, 
-                    data=final_payload_json_string,
+                    json=payload_to_send, # <--- Método padrão e mais limpo
                     headers=headers, 
                     timeout=10
                 ) 
             
-                # Verifica o status da resposta
+                # 4. Verifica o status da resposta
                 if response.status_code == 200:
                     logger.info(f"Comando '{task.name}' enviado para {device.device_id}. Status: OK.")
                 else:
-                    # CRÍTICO: Exibe a resposta da API em caso de erro (ex: 401/403)
-                    logger.error(f"Falha ao enviar comando para {device.device_id}. Status: {response.status_code}. Resposta: {response.text}")
-                    # Aqui pode mudar o status da tarefa para 'FALHOU'
+                    logger.error(f"Falha ao enviar comando para {device.device_id}. Status: {response.status_code}. Resposta: {response.text}")                    # Mude o status da tarefa para 'FALHOU'
                     task.status = 'FAILED'
                     task.save()
                     all_success = False
-                    
+            
             except requests.RequestException as e:
                 logger.error(f"Erro de rede ao enviar comando para {device.device_id}: {e}")
                 # Mude o status da tarefa para 'FALHOU' se houver erro de rede
                 task.status = 'FAILED'
                 task.save()
-                all_success = False            
-            
-            
-
-            # # Usa PATCH para atualizar apenas o campo pending_command
-            # response = requests.patch(
-            #     device_api_url, 
-            #     json=payload, 
-            #     headers=headers,
-            #     timeout=10 
-            # )
-            
-            # response.raise_for_status() # Lança exceção para códigos de status 4xx/5xx
-
-            # logger.warning(f"Comando '{command_data.get('action', 'N/A')}' enviado para {device.device_id} com sucesso. Status: {response.status_code}")
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Erro de rede ao enviar comando para o dispositivo {device.device_id}: {e}")
-            all_success = False 
+                all_success = False 
+    
         except Exception as e:
             logger.error(f"Erro inesperado ao processar a tarefa {task.pk} para o dispositivo {device.device_id}: {e}")
             all_success = False
 
-    # 2. Atualiza o status e o histórico da tarefa
+    # 5. Atualiza o status e o histórico da tarefa
     if all_success:
         # Tarefas únicas: marca como executada. Tarefas recorrentes: mantêm PENDING.
         if not task.is_recurrent:
