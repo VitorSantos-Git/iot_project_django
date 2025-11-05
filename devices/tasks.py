@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # DEVE USAR O NOME INTERNO DO SERVIÇO DENTRO DO DOCKER (web)
 BASE_API_URL = "http://web:8000/api/devices"
 
-CELERY_AUTH_TOKEN = config('CELERY_API_TOKEN')
+CELERY_AUTH_TOKEN = config('CELERY_API_TOKEN', default='CELERY_TOKEN_MISSING')
 
 
 # ==============================================================================
@@ -61,7 +61,7 @@ def process_scheduled_task(task_id):
             try:
                 # Faz a requisição PATCH para atualizar o comando pendente
                 response = requests.patch(
-                    url, 
+                    device_api_url, 
                     data=json.dumps(payload), 
                     headers=headers, 
                     timeout=10
