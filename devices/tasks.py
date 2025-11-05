@@ -62,7 +62,7 @@ def process_scheduled_task(task_id):
                 # Faz a requisição PATCH para atualizar o comando pendente
                 response = requests.patch(
                     device_api_url, 
-                    data=json.dumps(payload), 
+                    json=payload, 
                     headers=headers, 
                     timeout=10
                 ) 
