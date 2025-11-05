@@ -13,6 +13,7 @@ from .models import Device, TelemetryData
 from .serializers import DeviceSerializer, TelemetryDataSerializer
 from core_system.authentication import TokenAuthentication
 from django.db.models import F
+from decouple import config
 
 # ==============================================================================
 # 1. VIEWSET PARA GERENCIAR DISPOSITIVOS (Autenticado pelo Token do ESP)
@@ -29,9 +30,24 @@ class DeviceViewSet(viewsets.ModelViewSet):
     # Usaremos uma autenticação customizada baseada em Token
     authentication_classes = [TokenAuthentication] 
     #permission_classes = [IsAuthenticated] # Exige autenticação
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [IsAuthenticated]
 
     lookup_field = 'device_id'
+
+    def get_queryset(self):
+        # Lógica de segurança: O dispositivo só pode ver o próprio registro,
+        # A MENOS QUE seja o Celery Worker (Token Mestre) ou Admin.
+
+        if self.request.user is None and self.request.auth is not None:
+             # Se o self.request.user é None, mas a autenticação foi bem-sucedida,
+             # significa que o Token Mestre foi usado.
+             return Device.objects.all()
+
+        # Dispositivo Individual: Só pode ver e modificar o próprio registro.
+        if self.request.user and isinstance(self.request.user, Device):
+            return Device.objects.filter(pk=self.request.user.pk)
+        
+        return Device.objects.none() # Nenhuma outra requisição deve ter acesso.
 
     # Sobrescrevemos o método retrieve (GET detalhado)
     def retrieve(self, request, *args, **kwargs):

@@ -2,7 +2,10 @@
 from rest_framework import authentication
 from rest_framework import exceptions
 from django.contrib.auth.models import User
-from devices.models import Device # Importamos o modelo Device que usaremos para o token
+from devices.models import Device # Importamos o modelo Device para o token
+from decouple import config
+
+CELERY_MASTER_TOKEN = config('CELERY_API_TOKEN', default='CELERY_TOKEN_MISSING')
 
 class TokenAuthentication(authentication.BaseAuthentication):
     """
@@ -29,6 +32,13 @@ class TokenAuthentication(authentication.BaseAuthentication):
 
         if auth_type.lower() != 'token':
             raise exceptions.AuthenticationFailed('O tipo de autenticação deve ser "Token".')
+        
+        # VERIFICAÇÃO DO TOKEN MESTRE (CELERY) 
+        if auth_token == CELERY_MASTER_TOKEN:
+            # Se for o Celery, retornamos um 'Dispositivo Fantasma' para autenticar
+            # e dar acesso total (o TokenAuthentication precisa retornar 2 valores).
+            # Como o Celery não precisa de um Device real, retornamos None para o dispositivo.
+            return (None, auth_token)
 
         # 2. Busca o Device pelo Token fornecido
         try:
