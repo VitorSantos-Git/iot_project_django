@@ -52,7 +52,7 @@ def process_scheduled_task(task_id):
             # Cabeçalhos para autenticação e tipo de conteúdo
             headers = {
                 'Authorization': f'Token {CELERY_AUTH_TOKEN}',
-                'Content-Type': 'application/json'
+                # 'Content-Type': 'application/json'
             }
             
             # Payload para definir o comando pendente
