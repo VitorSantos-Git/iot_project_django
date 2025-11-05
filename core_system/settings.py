@@ -201,7 +201,7 @@ JAZZMIN_SETTINGS = {
     
     # Caminho relativo para o logo do seu site. Deve estar na pasta de arquivos estáticos.
     # Usado como logo principal no canto superior esquerdo (próximo ao site_brand).
-    "site_logo": "img/logoV.png", # (opcional)
+    "site_logo": "img/LogoV.png", # (opcional)
     
     # Logo específico para a tela de login. Se None, usará o site_logo.
     "login_logo": None, # Opcional: Logo para a página de login
