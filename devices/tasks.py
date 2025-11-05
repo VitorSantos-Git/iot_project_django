@@ -41,7 +41,8 @@ def process_scheduled_task(task_id):
 
     # 1. Prepara o comando (Dict do JSONField) e o converte para STRING para o CharField.
     command_data = task.command_json
-    command_data_json_string = json.dumps(command_data) # String JSON para o CharField
+    # O Celery envia a string JSON para o campo CharField 'pending_command' do Device
+    command_data_json_string = json.dumps(command_data) 
     
     # 2. Payload final: Dicionário Python que será serializado pelo requests
     payload_to_send = {'pending_command': command_data_json_string}
@@ -54,17 +55,17 @@ def process_scheduled_task(task_id):
             # Tenta enviar o comando para o dispositivo (PATCH no registro do Device)
             device_api_url = f"{BASE_API_URL}/{device.device_id}/"
             
-            # Cabeçalhos: Apenas Autenticação. requests cuida do Content-Type no json=
+            # Cabeçalhos: Autenticação + Content-Type explícito
             headers = {
                 'Authorization': f'Token {CELERY_AUTH_TOKEN}',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json' 
             }
 
             try:
-                # 3. Faz a requisição PATCH usando json=payload
+                # 3. Faz a requisição PATCH usando data=json.dumps(payload)
                 response = requests.patch(
                     device_api_url, 
-                    data=json.dumps(payload_to_send),# <--- Método padrão e mais limpo
+                    data=json.dumps(payload_to_send), # Enviando o JSON serializado
                     headers=headers, 
                     timeout=10
                 ) 
@@ -73,7 +74,9 @@ def process_scheduled_task(task_id):
                 if response.status_code == 200:
                     logger.info(f"Comando '{task.name}' enviado para {device.device_id}. Status: OK.")
                 else:
-                    logger.error(f"Falha ao enviar comando para {device.device_id}. Status: {response.status_code}. Resposta: {response.text}")                    # Mude o status da tarefa para 'FALHOU'
+                    # Loga o status e a resposta inteira para debug (mesmo que seja HTML)
+                    logger.error(f"Falha ao enviar comando para {device.device_id}. Status: {response.status_code}. Resposta: {response.text}") 
+                    # Mude o status da tarefa para 'FALHOU'
                     task.status = 'FAILED'
                     task.save()
                     all_success = False
@@ -84,7 +87,7 @@ def process_scheduled_task(task_id):
                 task.status = 'FAILED'
                 task.save()
                 all_success = False 
-    
+        
         except Exception as e:
             logger.error(f"Erro inesperado ao processar a tarefa {task.pk} para o dispositivo {device.device_id}: {e}")
             all_success = False
