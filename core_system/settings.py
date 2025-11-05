@@ -17,7 +17,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = config('DEBUG', default=False, cast=bool)
 
 # Adicionamos 'localhost' e o IP do host (lido do .env)
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', config('ALLOWED_HOST', default='')]
@@ -236,7 +236,7 @@ JAZZMIN_SETTINGS = {
         # URL principal
         #{"name": "Início", "url": "/"}, 
         # Link para documentação (opcional)
-        {"model": "auth.User"},
+        #{"model": "auth.User"},
         # Link para o Dashboard de Dispositivos (a nova rota que configuramos)
         {"name": "*Dispositivo Painel*", "url": "/devices/dashboard/", "new_window": True},
         # Link para site da escola (opcional)
