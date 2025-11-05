@@ -30,7 +30,7 @@ class DeviceViewSet(viewsets.ModelViewSet):
     # Usaremos uma autenticação customizada baseada em Token
     authentication_classes = [TokenAuthentication] 
     #permission_classes = [IsAuthenticated] # Exige autenticação
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     lookup_field = 'device_id'
 

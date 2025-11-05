@@ -2,29 +2,34 @@
 from rest_framework import serializers
 from .models import Device, TelemetryData
 from django.utils import timezone
+import json
 
 # Serializer para o modelo Device
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
-        # Incluímos todos os campos que o ESP8266 irá ler/escrever/confirmar
+        # Incluímos SOMENTE os campos que podem ser lidos OU atualizados pelo ESP/Celery
         fields = [
-            'name', 'device_type', 'location', 'ip_address', 
-            'is_active', 'pending_command', 'last_command', 'last_seen'
+            'device_id',            # Chave de Lookup (Apenas leitura/identificação)
+            'pending_command',      # Único campo que o Celery PATCH envia
+            'last_command',         # O ESP PATCH envia isso de volta (confirmação)
+            'is_active',            # O ESP PATCH envia isso de volta
+            'last_seen',            # Apenas leitura
+            'ip_address',           # Apenas leitura
+            # Campos estáticos como 'name', 'device_type', 'location' não precisam estar aqui
         ]
-        read_only_fields = ['last_seen'] # last_seen será preenchido pelo Django/API
-
+        
+        read_only_fields = [
+            'device_id',            # Vem da URL, não do corpo
+            'last_seen',            # Gerado pelo Django
+            'ip_address',           # Gerado pelo Django
+        ] 
+        
         extra_kwargs = {
-            # Torna o 'pending_command' o único campo que pode ser escrito no PATCH
-            # sem problemas de validação (embora todos sejam opcionais, isso garante)
-            'pending_command': {'required': False}, 
-            # Garante que os outros campos sejam ignorados se não forem fornecidos
-            'name': {'required': False},
-            'device_type': {'required': False},
-            'location': {'required': False},
-            'ip_address': {'required': False},
-            'is_active': {'required': False},
+            # O PATCH só envia 'pending_command' (tasks.py), então o resto é opcional
+            'pending_command': {'required': False},
             'last_command': {'required': False},
+            'is_active': {'required': False},
         }
 
 # Serializer para o modelo TelemetryData
