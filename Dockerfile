@@ -3,8 +3,12 @@
 # Usaremos a variante "slim-buster" ou "slim-bullseye" por ser menor
 FROM python:3.11-slim
 
+# O Gunicorn é instalado aqui. Isso garante que o shell do container o encontre.
+ENV PATH="/usr/local/bin:$PATH"
+
 # Evita que o Python escreva arquivos .pyc no disco
 ENV PYTHONDONTWRITEBYTECODE 1
+
 # Força a saída de buffers para o terminal (útil para logs)
 ENV PYTHONUNBUFFERED 1
 
