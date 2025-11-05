@@ -100,16 +100,24 @@ class DeviceViewSet(viewsets.ModelViewSet):
     # Sobrescrevemos o método update/partial_update (PUT/PATCH)
     # Usado pelo ESP8266 para confirmar que um comando foi executado.
     def update(self, request, *args, **kwargs):
-        device = self.get_object()
-        
-        # O ESP envia um PUT/PATCH com {"last_command": "...", "pending_command": null}
-        # O objetivo principal é limpar o pending_command, mas permitimos a atualização
-        # de outros campos do Device (como name, location, etc.)
-        
-        serializer = self.get_serializer(device, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
+        partial = kwargs.pop('partial', False) # Deve ser True para PATCH
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=True)
+
+        # --- PONTO CRÍTICO DE DEBUG ---
+        if not serializer.is_valid():
+            # **Imprime o erro de validação detalhado no log do Docker Web**
+            print(f"ERRO DE VALIDAÇÃO DO DRF: {serializer.errors}") 
+            # Retorna o erro 400 com o JSON detalhado (se o DEBUG=True estiver funcionando)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        # -----------------------------
+
         self.perform_update(serializer)
-        
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # Se 'prefetch_related' foi usado, recarregue a instância
+            instance = self.get_object()
+
         return Response(serializer.data)
 
 

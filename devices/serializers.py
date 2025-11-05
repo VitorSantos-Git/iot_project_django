@@ -9,7 +9,7 @@ class DeviceSerializer(serializers.ModelSerializer):
         model = Device
         # Incluímos todos os campos que o ESP8266 irá ler/escrever/confirmar
         fields = [
-            'device_id', 'name', 'device_type', 'location', 'ip_address', 
+            'name', 'device_type', 'location', 'ip_address', 
             'is_active', 'pending_command', 'last_command', 'last_seen'
         ]
         read_only_fields = ['last_seen'] # last_seen será preenchido pelo Django/API
