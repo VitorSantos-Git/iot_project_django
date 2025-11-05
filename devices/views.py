@@ -79,6 +79,23 @@ class DeviceViewSet(viewsets.ModelViewSet):
             response_data["command"] = device.pending_command
             
         return Response(response_data)
+    
+    def partial_update(self, request, *args, **kwargs):
+        """
+        Customiza o PATCH para garantir que a validação seja parcial (partial=True),
+        o que permite que apenas o campo pending_command seja enviado pelo Celery.
+        """
+        instance = self.get_object()
+        # O self.get_serializer precisa ser chamado com partial=True
+        serializer = self.get_serializer(instance, data=request.data, partial=True) 
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # Recria o cache de objetos pré-buscados se necessário
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     # Sobrescrevemos o método update/partial_update (PUT/PATCH)
     # Usado pelo ESP8266 para confirmar que um comando foi executado.
